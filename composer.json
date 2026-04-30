@@ -4,6 +4,7 @@
     "type": "project",
     "require": {
         "php": "^8.4",
+        "slim/php-view": "^3.4",
         "slim/psr7": "^1.7",
         "slim/slim": "^4.14"
     },
