@@ -9,20 +9,29 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/">Анализатор страниц</a>
+    <div class="container-fluid d-flex flex-wrap align-items-center">
+        <a class="navbar-brand mb-0" href="/">Анализатор страниц</a>
+        <a class="nav-link mb-0 ms-3 link-light link-opacity-75" href="/urls">Сайты</a>
     </div>
 </nav>
-<main class="container py-4 flex-grow-1">
-    <?php foreach ($flash ?? [] as $message): ?>
-        <?php
-        $type = htmlspecialchars((string)($message['type'] ?? 'info'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $text = htmlspecialchars((string)($message['text'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        ?>
-        <div class="alert alert-<?= $type ?>" role="alert"><?= $text ?></div>
-    <?php endforeach; ?>
-    <?= $content ?>
+<main class="flex-grow-1">
+    <div class="container-lg mt-3">
+        <?php foreach ($flash ?? [] as $message): ?>
+            <?php
+            $type = htmlspecialchars((string)($message['type'] ?? 'info'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $text = htmlspecialchars((string)($message['text'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            ?>
+            <div class="alert alert-<?= $type ?>" role="alert"><?= $text ?></div>
+        <?php endforeach; ?>
+        <?= $content ?>
+    </div>
 </main>
+<hr class="border-secondary-subtle mb-0">
+<footer class="py-3">
+    <div class="container-lg text-center">
+        <a href="https://ru.hexlet.io" class="link-primary text-decoration-none">Hexlet</a>
+    </div>
+</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
         crossorigin="anonymous"></script>

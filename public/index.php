@@ -21,4 +21,15 @@ $app->get('/', function (Request $request, Response $response) use ($renderer): 
     ]);
 });
 
+$app->get('/urls', function (Request $request, Response $response) use ($renderer): Response {
+    return $renderer->render($response, 'urls.php', [
+        'title' => 'Сайты',
+        'flash' => [],
+    ]);
+});
+
+$app->post('/urls', function (Request $request, Response $response): Response {
+    return $response->withHeader('Location', '/')->withStatus(302);
+});
+
 $app->run();
