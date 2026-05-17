@@ -21,8 +21,8 @@
 
 <h2 class="display-6 mt-5 mb-3">Проверки</h2>
 
-<form method="post" action="/urls/<?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>/checks">
-    <input type="submit" value="Запустить проверку">
+<form method="post" action="/urls/<?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>/checks" class="mb-4">
+    <input class="btn btn-primary btn-lg px-4 text-uppercase" type="submit" value="Запустить проверку">
 </form>
 
 <table class="table table-bordered" data-test="checks">
