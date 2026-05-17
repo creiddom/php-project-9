@@ -15,7 +15,7 @@ $urlName = $urlName ?? '';
                     class="form-control form-control-lg<?= $errors !== [] ? ' is-invalid' : '' ?>"
                     type="text"
                     id="url"
-                    name="url[name]"
+                    name="url"
                     value="<?= htmlspecialchars((string) $urlName, ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>"
                     placeholder="https://www.example.com"
                 >
