@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
+use DiDom\Document;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -53,6 +54,41 @@ function truncateText(?string $value, int $maxLength = 200): string
     }
 
     return mb_substr($value, 0, $maxLength) . '...';
+}
+
+/**
+ * @return array{h1: ?string, title: ?string, description: ?string}
+ */
+function extractSeoFromHtml(string $html): array
+{
+    $document = new Document($html);
+
+    $h1 = null;
+    $h1Text = optional($document->first('h1'))->text();
+
+    if ($h1Text !== null) {
+        $h1 = mb_strlen($h1Text) > 255 ? mb_substr($h1Text, 0, 255) : $h1Text;
+    }
+
+    $title = null;
+    $titleText = optional($document->first('title'))->text();
+
+    if ($titleText !== null) {
+        $title = mb_strlen($titleText) > 255 ? mb_substr($titleText, 0, 255) : $titleText;
+    }
+
+    $description = null;
+    $descriptionContent = optional($document->first('meta[name="description"]'))->getAttribute('content');
+
+    if ($descriptionContent !== null) {
+        $description = $descriptionContent;
+    }
+
+    return [
+        'h1' => $h1,
+        'title' => $title,
+        'description' => $description,
+    ];
 }
 
 $templatesPath = dirname(__DIR__) . '/templates';
@@ -192,7 +228,6 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
 
     try {
         $httpResponse = $client->request('GET', $url['name']);
-        $statusCode = $httpResponse->getStatusCode();
     } catch (ConnectException) {
         $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
 
@@ -204,15 +239,25 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
             return $redirect;
         }
 
-        $statusCode = $e->getResponse()->getStatusCode();
+        $httpResponse = $e->getResponse();
     }
 
+    $statusCode = $httpResponse->getStatusCode();
+    $seo = extractSeoFromHtml((string) $httpResponse->getBody());
     $createdAt = Carbon::now();
 
     $stmt = $pdo->prepare(
-        'INSERT INTO url_checks (url_id, status_code, created_at) VALUES (?, ?, ?)'
+        'INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
+         VALUES (?, ?, ?, ?, ?, ?)'
     );
-    $stmt->execute([$args['id'], $statusCode, $createdAt->toDateTimeString()]);
+    $stmt->execute([
+        $args['id'],
+        $statusCode,
+        $seo['h1'],
+        $seo['title'],
+        $seo['description'],
+        $createdAt->toDateTimeString(),
+    ]);
 
     $flash->addMessage('success', 'Страница успешно проверена');
 

@@ -5,6 +5,8 @@
     "require": {
         "php": "^8.4",
         "guzzlehttp/guzzle": "^7.10",
+        "illuminate/support": "^13.9",
+        "imangazaliev/didom": "^2.0",
         "nesbot/carbon": "^3.11",
         "slim/flash": "^0.4.0",
         "slim/php-view": "^3.4",
