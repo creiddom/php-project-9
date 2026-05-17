@@ -44,8 +44,18 @@ $renderer = new PhpRenderer($templatesPath, [], 'layout.php');
 
 $databaseUrl = parse_url($_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL') ?: '');
 
+$host = $databaseUrl['host'] ?? 'localhost';
+$port = $databaseUrl['port'] ?? 5432;
+$dbname = ltrim($databaseUrl['path'] ?? '', '/');
+
+$dsn = "pgsql:host={$host};port={$port};dbname={$dbname}";
+
+if (str_contains($host, 'render.com')) {
+    $dsn .= ';sslmode=require';
+}
+
 $pdo = new PDO(
-    "pgsql:host={$databaseUrl['host']};port={$databaseUrl['port']};dbname=" . ltrim($databaseUrl['path'], '/'),
+    $dsn,
     $databaseUrl['user'] ?? null,
     $databaseUrl['pass'] ?? null
 );
