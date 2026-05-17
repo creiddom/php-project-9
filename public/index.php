@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
-use DiDom\Document;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\RequestException;
@@ -12,6 +11,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Slim\Flash\Messages;
 use Slim\Views\PhpRenderer;
+use Symfony\Component\DomCrawler\Crawler;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -56,32 +56,48 @@ function truncateText(?string $value, int $maxLength = 200): string
     return mb_substr($value, 0, $maxLength) . '...';
 }
 
+function limitSeoField(?string $value, int $maxLength = 255): ?string
+{
+    if ($value === null || trim($value) === '') {
+        return null;
+    }
+
+    $value = trim($value);
+
+    if (mb_strlen($value) > $maxLength) {
+        return mb_substr($value, 0, $maxLength);
+    }
+
+    return $value;
+}
+
 /**
  * @return array{h1: ?string, title: ?string, description: ?string}
  */
 function extractSeoFromHtml(string $html): array
 {
-    $document = new Document($html);
+    $crawler = new Crawler();
+    $crawler->addHtmlContent($html);
 
     $h1 = null;
-    $h1Text = optional($document->first('h1'))->text();
+    $h1Crawler = $crawler->filter('h1');
 
-    if ($h1Text !== null) {
-        $h1 = mb_strlen($h1Text) > 255 ? mb_substr($h1Text, 0, 255) : $h1Text;
+    if ($h1Crawler->count() > 0) {
+        $h1 = limitSeoField(optional($h1Crawler)->text(''));
     }
 
     $title = null;
-    $titleText = optional($document->first('title'))->text();
+    $titleCrawler = $crawler->filter('title');
 
-    if ($titleText !== null) {
-        $title = mb_strlen($titleText) > 255 ? mb_substr($titleText, 0, 255) : $titleText;
+    if ($titleCrawler->count() > 0) {
+        $title = limitSeoField(optional($titleCrawler)->text(''));
     }
 
     $description = null;
-    $descriptionContent = optional($document->first('meta[name="description"]'))->getAttribute('content');
+    $descriptionCrawler = $crawler->filter('meta[name="description"]');
 
-    if ($descriptionContent !== null) {
-        $description = $descriptionContent;
+    if ($descriptionCrawler->count() > 0) {
+        $description = optional($descriptionCrawler)->attr('content');
     }
 
     return [
