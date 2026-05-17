@@ -185,10 +185,12 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
     }
 
     if ($errors !== []) {
+        $flash->addMessage('danger', $errors[0]);
+
         return $renderer->render($response->withStatus(422), 'home.php', [
             'title' => 'Анализатор страниц',
             'flash' => flashForTemplate($flash),
-            'errors' => $errors,
+            'errors' => [],
             'urlName' => $urlName,
         ]);
     }
