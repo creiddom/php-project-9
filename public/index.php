@@ -39,6 +39,19 @@ function formatCreatedAt(string $createdAt): string
     return Carbon::parse($createdAt)->format('Y-m-d');
 }
 
+function truncateText(?string $value, int $maxLength = 200): string
+{
+    if ($value === null || $value === '') {
+        return '';
+    }
+
+    if (mb_strlen($value) <= $maxLength) {
+        return $value;
+    }
+
+    return mb_substr($value, 0, $maxLength) . '...';
+}
+
 $templatesPath = dirname(__DIR__) . '/templates';
 $renderer = new PhpRenderer($templatesPath, [], 'layout.php');
 
@@ -76,11 +89,19 @@ $app->get('/', function (Request $request, Response $response) use ($renderer, $
 })->setName('home');
 
 $app->get('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash): Response {
-    $stmt = $pdo->query('SELECT * FROM urls ORDER BY created_at DESC');
+    $stmt = $pdo->query(
+        'SELECT urls.*,
+            (SELECT MAX(created_at) FROM url_checks WHERE url_id = urls.id) AS last_check_at
+        FROM urls
+        ORDER BY urls.created_at DESC'
+    );
     $urls = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($urls as &$url) {
         $url['created_at'] = formatCreatedAt($url['created_at']);
+        $url['last_check_at'] = $url['last_check_at'] !== null
+            ? formatCreatedAt($url['last_check_at'])
+            : '';
     }
     unset($url);
 
@@ -144,6 +165,29 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
         ->withStatus(302);
 })->setName('urls.store');
 
+$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app): Response {
+    $stmt = $pdo->prepare('SELECT id FROM urls WHERE id = ?');
+    $stmt->execute([$args['id']]);
+    $url = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($url === false) {
+        return $response->withStatus(404);
+    }
+
+    $createdAt = Carbon::now();
+
+    $stmt = $pdo->prepare('INSERT INTO url_checks (url_id, created_at) VALUES (?, ?)');
+    $stmt->execute([$args['id'], $createdAt->toDateTimeString()]);
+
+    $flash->addMessage('success', 'Страница успешно проверена');
+
+    $routeParser = $app->getRouteCollector()->getRouteParser();
+
+    return $response
+        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $args['id']]))
+        ->withStatus(302);
+})->setName('urls.checks');
+
 $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, array $args) use ($renderer, $pdo, $flash): Response {
     $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
@@ -155,10 +199,23 @@ $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, a
 
     $url['created_at'] = formatCreatedAt($url['created_at']);
 
+    $stmt = $pdo->prepare('SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC');
+    $stmt->execute([$args['id']]);
+    $checks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    foreach ($checks as &$check) {
+        $check['created_at'] = formatCreatedAt($check['created_at']);
+        $check['h1'] = truncateText($check['h1'] !== null ? (string) $check['h1'] : null);
+        $check['title'] = truncateText($check['title'] !== null ? (string) $check['title'] : null);
+        $check['description'] = truncateText($check['description'] !== null ? (string) $check['description'] : null);
+    }
+    unset($check);
+
     return $renderer->render($response, 'url.php', [
         'title' => 'Сайт',
         'flash' => flashForTemplate($flash),
         'url' => $url,
+        'checks' => $checks,
     ]);
 })->setName('urls.show');
 
