@@ -3,6 +3,9 @@
 declare(strict_types=1);
 
 use Carbon\Carbon;
+use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -91,7 +94,10 @@ $app->get('/', function (Request $request, Response $response) use ($renderer, $
 $app->get('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash): Response {
     $stmt = $pdo->query(
         'SELECT urls.*,
-            (SELECT MAX(created_at) FROM url_checks WHERE url_id = urls.id) AS last_check_at
+            (SELECT status_code FROM url_checks
+             WHERE url_id = urls.id
+             ORDER BY created_at DESC
+             LIMIT 1) AS last_status_code
         FROM urls
         ORDER BY urls.created_at DESC'
     );
@@ -99,8 +105,8 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
 
     foreach ($urls as &$url) {
         $url['created_at'] = formatCreatedAt($url['created_at']);
-        $url['last_check_at'] = $url['last_check_at'] !== null
-            ? formatCreatedAt($url['last_check_at'])
+        $url['last_status_code'] = $url['last_status_code'] !== null
+            ? (string) $url['last_status_code']
             : '';
     }
     unset($url);
@@ -166,7 +172,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
 })->setName('urls.store');
 
 $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app): Response {
-    $stmt = $pdo->prepare('SELECT id FROM urls WHERE id = ?');
+    $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
     $url = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -174,18 +180,43 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
         return $response->withStatus(404);
     }
 
+    $routeParser = $app->getRouteCollector()->getRouteParser();
+    $redirect = $response
+        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $args['id']]))
+        ->withStatus(302);
+
+    $client = new Client([
+        'timeout' => 10,
+        'http_errors' => false,
+    ]);
+
+    try {
+        $httpResponse = $client->request('GET', $url['name']);
+        $statusCode = $httpResponse->getStatusCode();
+    } catch (ConnectException) {
+        $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
+
+        return $redirect;
+    } catch (RequestException $e) {
+        if (!$e->hasResponse()) {
+            $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
+
+            return $redirect;
+        }
+
+        $statusCode = $e->getResponse()->getStatusCode();
+    }
+
     $createdAt = Carbon::now();
 
-    $stmt = $pdo->prepare('INSERT INTO url_checks (url_id, created_at) VALUES (?, ?)');
-    $stmt->execute([$args['id'], $createdAt->toDateTimeString()]);
+    $stmt = $pdo->prepare(
+        'INSERT INTO url_checks (url_id, status_code, created_at) VALUES (?, ?, ?)'
+    );
+    $stmt->execute([$args['id'], $statusCode, $createdAt->toDateTimeString()]);
 
     $flash->addMessage('success', 'Страница успешно проверена');
 
-    $routeParser = $app->getRouteCollector()->getRouteParser();
-
-    return $response
-        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $args['id']]))
-        ->withStatus(302);
+    return $redirect;
 })->setName('urls.checks');
 
 $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, array $args) use ($renderer, $pdo, $flash): Response {

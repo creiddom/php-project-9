@@ -4,6 +4,7 @@
     "type": "project",
     "require": {
         "php": "^8.4",
+        "guzzlehttp/guzzle": "^7.10",
         "nesbot/carbon": "^3.11",
         "slim/flash": "^0.4.0",
         "slim/php-view": "^3.4",

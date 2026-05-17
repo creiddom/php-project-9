@@ -19,7 +19,7 @@
                     </a>
                 </td>
                 <td><?= htmlspecialchars((string) $url['created_at'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars((string) $url['last_check_at'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
+                <td><?= htmlspecialchars((string) $url['last_status_code'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
             </tr>
         <?php endforeach; ?>
     </tbody>
