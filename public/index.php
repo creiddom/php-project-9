@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use App\Http\PageChecker;
 use App\SeoExtractor;
+use App\Support\DateFormatter;
 use App\Text;
 use App\Validator\UrlValidator;
+use App\View\FlashPresenter;
 use Carbon\Carbon;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -21,30 +23,6 @@ $flash = new Messages();
 $urlValidator = new UrlValidator();
 $seoExtractor = new SeoExtractor();
 $pageChecker = new PageChecker($seoExtractor);
-
-/**
- * @return array<int, array{type: string, text: string}>
- */
-function flashForTemplate(Messages $flash): array
-{
-    $result = [];
-
-    foreach ($flash->getMessages() as $type => $messages) {
-        foreach ($messages as $message) {
-            $result[] = [
-                'type' => $type,
-                'text' => $message,
-            ];
-        }
-    }
-
-    return $result;
-}
-
-function formatCreatedAt(string $createdAt): string
-{
-    return Carbon::parse($createdAt)->format('Y-m-d');
-}
 
 $templatesPath = dirname(__DIR__) . '/templates';
 $renderer = new PhpRenderer($templatesPath, [], 'layout.php');
@@ -76,7 +54,7 @@ $app->addBodyParsingMiddleware();
 $app->get('/', function (Request $request, Response $response) use ($renderer, $flash): Response {
     return $renderer->render($response, 'home.php', [
         'title' => 'Анализатор страниц',
-        'flash' => flashForTemplate($flash),
+        'flash' => FlashPresenter::forTemplate($flash),
         'errors' => [],
         'urlName' => '',
     ]);
@@ -95,7 +73,7 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
     $urls = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($urls as &$url) {
-        $url['created_at'] = formatCreatedAt($url['created_at']);
+        $url['created_at'] = DateFormatter::formatCreatedAt($url['created_at']);
         $url['last_status_code'] = $url['last_status_code'] !== null
             ? (string) $url['last_status_code']
             : '';
@@ -104,7 +82,7 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
 
     return $renderer->render($response, 'urls.php', [
         'title' => 'Сайты',
-        'flash' => flashForTemplate($flash),
+        'flash' => FlashPresenter::forTemplate($flash),
         'urls' => $urls,
     ]);
 })->setName('urls.index');
@@ -120,7 +98,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
 
         return $renderer->render($response->withStatus(422), 'home.php', [
             'title' => 'Анализатор страниц',
-            'flash' => flashForTemplate($flash),
+            'flash' => FlashPresenter::forTemplate($flash),
             'errors' => [$error],
             'urlName' => $urlName,
         ]);
@@ -206,14 +184,14 @@ $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, a
         return $response->withStatus(404);
     }
 
-    $url['created_at'] = formatCreatedAt($url['created_at']);
+    $url['created_at'] = DateFormatter::formatCreatedAt($url['created_at']);
 
     $stmt = $pdo->prepare('SELECT * FROM url_checks WHERE url_id = ? ORDER BY created_at DESC');
     $stmt->execute([$args['id']]);
     $checks = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($checks as &$check) {
-        $check['created_at'] = formatCreatedAt($check['created_at']);
+        $check['created_at'] = DateFormatter::formatCreatedAt($check['created_at']);
         $check['h1'] = Text::forDisplay($check['h1'] !== null ? (string) $check['h1'] : null);
         $check['title'] = Text::forDisplay($check['title'] !== null ? (string) $check['title'] : null);
         $check['description'] = Text::forDisplay($check['description'] !== null ? (string) $check['description'] : null);
@@ -222,7 +200,7 @@ $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, a
 
     return $renderer->render($response, 'url.php', [
         'title' => 'Сайт',
-        'flash' => flashForTemplate($flash),
+        'flash' => FlashPresenter::forTemplate($flash),
         'url' => $url,
         'checks' => $checks,
     ]);
