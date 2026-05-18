@@ -16,7 +16,7 @@
 </nav>
 <main class="flex-grow-1">
     <div class="container-lg mt-3">
-        <?php foreach ($flash ?? [] as $message): ?>
+        <?php foreach ($flash ?? [] as $message) : ?>
             <?php
             $type = htmlspecialchars((string)($message['type'] ?? 'info'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $text = htmlspecialchars((string)($message['text'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');

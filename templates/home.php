@@ -19,7 +19,7 @@ $urlName = $urlName ?? '';
                     value="<?= htmlspecialchars((string) $urlName, ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>"
                     placeholder="https://www.example.com"
                 >
-                <?php foreach ($errors as $error): ?>
+                <?php foreach ($errors as $error) : ?>
                     <div class="invalid-feedback d-block"><?= htmlspecialchars((string) $error, ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></div>
                 <?php endforeach; ?>
             </div>

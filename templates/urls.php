@@ -10,7 +10,7 @@
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($urls as $url): ?>
+        <?php foreach ($urls as $url) : ?>
             <tr>
                 <td><?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td>

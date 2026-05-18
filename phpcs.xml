@@ -2,6 +2,7 @@
 <ruleset name="hexlet-code">
     <file>public/index.php</file>
     <file>src</file>
+    <file>templates</file>
     <rule ref="PSR12">
         <exclude name="Generic.Files.LineEndings.InvalidEOLChar"/>
         <exclude name="Generic.Files.LineLength"/>

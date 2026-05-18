@@ -37,7 +37,7 @@
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($checks as $check): ?>
+        <?php foreach ($checks as $check) : ?>
             <tr>
                 <td><?= htmlspecialchars((string) $check['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) ($check['status_code'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
