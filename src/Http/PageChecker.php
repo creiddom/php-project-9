@@ -34,6 +34,7 @@ final class PageChecker
             'timeout' => 10,
             'connect_timeout' => 5,
             'http_errors' => false,
+            'allow_redirects' => false,
         ]);
 
         try {
@@ -63,12 +64,18 @@ final class PageChecker
      */
     private function buildResult(ResponseInterface $response): array
     {
+        $statusCode = $response->getStatusCode();
+
+        if ($statusCode < 200 || $statusCode >= 300) {
+            return $this->connectionFailed();
+        }
+
         $seo = $this->seoExtractor->extract((string) $response->getBody());
 
         return [
             'ok' => true,
             'error' => null,
-            'statusCode' => $response->getStatusCode(),
+            'statusCode' => $statusCode,
             'seo' => $seo,
         ];
     }
