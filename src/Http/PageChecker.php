@@ -20,15 +20,7 @@ final class PageChecker
     ) {
     }
 
-    /**
-     * @return array{
-     *     ok: bool,
-     *     error: ?string,
-     *     statusCode: ?int,
-     *     seo: ?array{h1: ?string, title: ?string, description: ?string}
-     * }
-     */
-    public function check(string $url): array
+    public function check(string $url): CheckResult
     {
         $client = new Client([
             'timeout' => 10,
@@ -40,61 +32,30 @@ final class PageChecker
         try {
             $response = $client->request('GET', $url);
         } catch (ConnectException) {
-            return $this->connectionFailed();
+            return CheckResult::failed(self::CONNECTION_ERROR);
         } catch (RequestException $e) {
-            if (!$e->hasResponse()) {
-                return $this->connectionFailed();
-            }
-
             $response = $e->getResponse();
+
+            if ($response === null) {
+                return CheckResult::failed(self::CONNECTION_ERROR);
+            }
         } catch (GuzzleException) {
-            return $this->connectionFailed();
+            return CheckResult::failed(self::CONNECTION_ERROR);
         }
 
         return $this->buildResult($response);
     }
 
-    /**
-     * @return array{
-     *     ok: bool,
-     *     error: ?string,
-     *     statusCode: ?int,
-     *     seo: ?array{h1: ?string, title: ?string, description: ?string}
-     * }
-     */
-    private function buildResult(ResponseInterface $response): array
+    private function buildResult(ResponseInterface $response): CheckResult
     {
         $statusCode = $response->getStatusCode();
 
         if ($statusCode < 200 || $statusCode >= 300) {
-            return $this->connectionFailed();
+            return CheckResult::failed(self::CONNECTION_ERROR);
         }
 
         $seo = $this->seoExtractor->extract((string) $response->getBody());
 
-        return [
-            'ok' => true,
-            'error' => null,
-            'statusCode' => $statusCode,
-            'seo' => $seo,
-        ];
-    }
-
-    /**
-     * @return array{
-     *     ok: bool,
-     *     error: string,
-     *     statusCode: null,
-     *     seo: null
-     * }
-     */
-    private function connectionFailed(): array
-    {
-        return [
-            'ok' => false,
-            'error' => self::CONNECTION_ERROR,
-            'statusCode' => null,
-            'seo' => null,
-        ];
+        return CheckResult::succeeded($statusCode, $seo);
     }
 }

@@ -1,3 +1,8 @@
+<?php
+
+$urls = $urls ?? [];
+
+?>
 <h1 class="display-6 mb-4">Сайты</h1>
 
 <table class="table table-bordered table-hover" data-test="urls">

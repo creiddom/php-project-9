@@ -1,3 +1,8 @@
+<?php
+
+$content = $content ?? '';
+
+?>
 <!DOCTYPE html>
 <html lang="ru">
 <head>

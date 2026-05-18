@@ -70,6 +70,9 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
         FROM urls
         ORDER BY urls.created_at DESC'
     );
+    if ($stmt === false) {
+        throw new RuntimeException('Failed to load urls');
+    }
     $urls = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     foreach ($urls as &$url) {
@@ -89,7 +92,8 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
 
 $app->post('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash, $app, $urlValidator): Response {
     $data = $request->getParsedBody();
-    $urlName = trim((string) ($data['url'] ?? ''));
+    $formData = is_array($data) ? $data : [];
+    $urlName = trim((string) ($formData['url'] ?? ''));
 
     $error = $urlValidator->validate($urlName);
 
@@ -116,7 +120,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
         $flash->addMessage('success', 'Страница уже существует');
 
         return $response
-            ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $existingUrl['id']]))
+            ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => (string) $existingUrl['id']]))
             ->withStatus(302);
     }
 
@@ -126,10 +130,14 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
     $stmt->execute([$normalizedUrl, $createdAt->toDateTimeString()]);
     $id = $stmt->fetchColumn();
 
+    if ($id === false) {
+        return $response->withStatus(500);
+    }
+
     $flash->addMessage('success', 'Страница успешно добавлена');
 
     return $response
-        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $id]))
+        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => (string) $id]))
         ->withStatus(302);
 })->setName('urls.store');
 
@@ -149,13 +157,14 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
 
     $checkResult = $pageChecker->check($url['name']);
 
-    if (!$checkResult['ok']) {
-        $flash->addMessage('danger', $checkResult['error']);
+    if (!$checkResult->ok) {
+        $flash->addMessage('danger', $checkResult->error ?? PageChecker::CONNECTION_ERROR);
 
         return $redirect;
     }
 
     $createdAt = Carbon::now();
+    $seo = $checkResult->seo ?? ['h1' => null, 'title' => null, 'description' => null];
 
     $stmt = $pdo->prepare(
         'INSERT INTO url_checks (url_id, status_code, h1, title, description, created_at)
@@ -163,10 +172,10 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
     );
     $stmt->execute([
         $args['id'],
-        $checkResult['statusCode'],
-        $checkResult['seo']['h1'],
-        $checkResult['seo']['title'],
-        $checkResult['seo']['description'],
+        $checkResult->statusCode,
+        $seo['h1'],
+        $seo['title'],
+        $seo['description'],
         $createdAt->toDateTimeString(),
     ]);
 

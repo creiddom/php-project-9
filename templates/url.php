@@ -1,4 +1,9 @@
-<?php $checks = $checks ?? []; ?>
+<?php
+
+$url = $url ?? [];
+$checks = $checks ?? [];
+
+?>
 
 <h1 class="display-6 mb-4">Сайт: <?= htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></h1>
 
