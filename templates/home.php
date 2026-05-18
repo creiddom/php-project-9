@@ -20,7 +20,7 @@ $urlName = $urlName ?? '';
                     placeholder="https://www.example.com"
                 >
                 <?php foreach ($errors as $error): ?>
-                    <div class="invalid-feedback"><?= htmlspecialchars((string) $error, ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></div>
+                    <div class="invalid-feedback d-block"><?= htmlspecialchars((string) $error, ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></div>
                 <?php endforeach; ?>
             </div>
             <div class="col-2">

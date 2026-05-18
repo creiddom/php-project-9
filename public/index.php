@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use App\SeoExtractor;
+use App\Text;
+use App\Validator\UrlValidator;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ConnectException;
@@ -11,13 +14,14 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
 use Slim\Flash\Messages;
 use Slim\Views\PhpRenderer;
-use Symfony\Component\DomCrawler\Crawler;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 session_start();
 
 $flash = new Messages();
+$urlValidator = new UrlValidator();
+$seoExtractor = new SeoExtractor();
 
 /**
  * @return array<int, array{type: string, text: string}>
@@ -38,86 +42,9 @@ function flashForTemplate(Messages $flash): array
     return $result;
 }
 
-function isValidUrl(string $url): bool
-{
-    if (!filter_var($url, FILTER_VALIDATE_URL)) {
-        return false;
-    }
-
-    $parsed = parse_url($url);
-    $scheme = $parsed['scheme'] ?? '';
-    $host = $parsed['host'] ?? '';
-
-    return in_array($scheme, ['http', 'https'], true) && $host !== '';
-}
-
 function formatCreatedAt(string $createdAt): string
 {
     return Carbon::parse($createdAt)->format('Y-m-d');
-}
-
-function truncateText(?string $value, int $maxLength = 200): string
-{
-    if ($value === null || $value === '') {
-        return '';
-    }
-
-    if (mb_strlen($value) <= $maxLength) {
-        return $value;
-    }
-
-    return mb_substr($value, 0, $maxLength) . '...';
-}
-
-function limitSeoField(?string $value, int $maxLength = 255): ?string
-{
-    if ($value === null || trim($value) === '') {
-        return null;
-    }
-
-    $value = trim($value);
-
-    if (mb_strlen($value) > $maxLength) {
-        return mb_substr($value, 0, $maxLength);
-    }
-
-    return $value;
-}
-
-/**
- * @return array{h1: ?string, title: ?string, description: ?string}
- */
-function extractSeoFromHtml(string $html): array
-{
-    $crawler = new Crawler();
-    $crawler->addHtmlContent($html);
-
-    $h1 = null;
-    $h1Crawler = $crawler->filter('h1');
-
-    if ($h1Crawler->count() > 0) {
-        $h1 = limitSeoField(optional($h1Crawler)->text(''));
-    }
-
-    $title = null;
-    $titleCrawler = $crawler->filter('title');
-
-    if ($titleCrawler->count() > 0) {
-        $title = limitSeoField(optional($titleCrawler)->text(''));
-    }
-
-    $description = null;
-    $descriptionCrawler = $crawler->filter('meta[name="description"]');
-
-    if ($descriptionCrawler->count() > 0) {
-        $description = optional($descriptionCrawler)->attr('content');
-    }
-
-    return [
-        'h1' => $h1,
-        'title' => $title,
-        'description' => $description,
-    ];
 }
 
 $templatesPath = dirname(__DIR__) . '/templates';
@@ -183,33 +110,24 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
     ]);
 })->setName('urls.index');
 
-$app->post('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash, $app): Response {
+$app->post('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash, $app, $urlValidator): Response {
     $data = $request->getParsedBody();
     $urlName = trim((string) ($data['url'] ?? ''));
 
-    $errors = [];
+    $error = $urlValidator->validate($urlName);
 
-    if ($urlName === '') {
-        $errors[] = 'URL не должен быть пустым';
-    } elseif (mb_strlen($urlName) > 255) {
-        $errors[] = 'URL превышает 255 символов';
-    } elseif (!isValidUrl($urlName)) {
-        $errors[] = 'Некорректный URL';
-    }
-
-    if ($errors !== []) {
-        $flash->addMessage('danger', $errors[0]);
+    if ($error !== null) {
+        $flash->addMessage('danger', $error);
 
         return $renderer->render($response->withStatus(422), 'home.php', [
             'title' => 'Анализатор страниц',
             'flash' => flashForTemplate($flash),
-            'errors' => [],
+            'errors' => [$error],
             'urlName' => $urlName,
         ]);
     }
 
-    $parsedUrl = parse_url($urlName);
-    $normalizedUrl = "{$parsedUrl['scheme']}://{$parsedUrl['host']}";
+    $normalizedUrl = $urlValidator->normalize($urlName);
 
     $stmt = $pdo->prepare('SELECT id FROM urls WHERE name = ?');
     $stmt->execute([$normalizedUrl]);
@@ -238,7 +156,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
         ->withStatus(302);
 })->setName('urls.store');
 
-$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app): Response {
+$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app, $seoExtractor): Response {
     $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
     $url = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -274,7 +192,7 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
     }
 
     $statusCode = $httpResponse->getStatusCode();
-    $seo = extractSeoFromHtml((string) $httpResponse->getBody());
+    $seo = $seoExtractor->extract((string) $httpResponse->getBody());
     $createdAt = Carbon::now();
 
     $stmt = $pdo->prepare(
@@ -312,9 +230,9 @@ $app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, a
 
     foreach ($checks as &$check) {
         $check['created_at'] = formatCreatedAt($check['created_at']);
-        $check['h1'] = truncateText($check['h1'] !== null ? (string) $check['h1'] : null);
-        $check['title'] = truncateText($check['title'] !== null ? (string) $check['title'] : null);
-        $check['description'] = truncateText($check['description'] !== null ? (string) $check['description'] : null);
+        $check['h1'] = Text::forDisplay($check['h1'] !== null ? (string) $check['h1'] : null);
+        $check['title'] = Text::forDisplay($check['title'] !== null ? (string) $check['title'] : null);
+        $check['description'] = Text::forDisplay($check['description'] !== null ? (string) $check['description'] : null);
     }
     unset($check);
 
