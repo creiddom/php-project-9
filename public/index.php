@@ -38,6 +38,19 @@ function flashForTemplate(Messages $flash): array
     return $result;
 }
 
+function isValidUrl(string $url): bool
+{
+    if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        return false;
+    }
+
+    $parsed = parse_url($url);
+    $scheme = $parsed['scheme'] ?? '';
+    $host = $parsed['host'] ?? '';
+
+    return in_array($scheme, ['http', 'https'], true) && $host !== '';
+}
+
 function formatCreatedAt(string $createdAt): string
 {
     return Carbon::parse($createdAt)->format('Y-m-d');
@@ -180,7 +193,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
         $errors[] = 'URL не должен быть пустым';
     } elseif (mb_strlen($urlName) > 255) {
         $errors[] = 'URL превышает 255 символов';
-    } elseif (!filter_var($urlName, FILTER_VALIDATE_URL)) {
+    } elseif (!isValidUrl($urlName)) {
         $errors[] = 'Некорректный URL';
     }
 
