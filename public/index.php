@@ -2,14 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Http\PageChecker;
 use App\SeoExtractor;
 use App\Text;
 use App\Validator\UrlValidator;
 use Carbon\Carbon;
-use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\GuzzleException;
-use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Factory\AppFactory;
@@ -23,6 +20,7 @@ session_start();
 $flash = new Messages();
 $urlValidator = new UrlValidator();
 $seoExtractor = new SeoExtractor();
+$pageChecker = new PageChecker($seoExtractor);
 
 /**
  * @return array<int, array{type: string, text: string}>
@@ -157,7 +155,7 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
         ->withStatus(302);
 })->setName('urls.store');
 
-$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app, $seoExtractor): Response {
+$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app, $pageChecker): Response {
     $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
     $url = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -171,33 +169,14 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
         ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $args['id']]))
         ->withStatus(302);
 
-    $client = new Client([
-        'timeout' => 10,
-        'http_errors' => false,
-    ]);
+    $checkResult = $pageChecker->check($url['name']);
 
-    try {
-        $httpResponse = $client->request('GET', $url['name']);
-    } catch (ConnectException) {
-        $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
-
-        return $redirect;
-    } catch (RequestException $e) {
-        if (!$e->hasResponse()) {
-            $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
-
-            return $redirect;
-        }
-
-        $httpResponse = $e->getResponse();
-    } catch (GuzzleException) {
-        $flash->addMessage('danger', 'Произошла ошибка при проверке, не удалось подключиться');
+    if (!$checkResult['ok']) {
+        $flash->addMessage('danger', $checkResult['error']);
 
         return $redirect;
     }
 
-    $statusCode = $httpResponse->getStatusCode();
-    $seo = $seoExtractor->extract((string) $httpResponse->getBody());
     $createdAt = Carbon::now();
 
     $stmt = $pdo->prepare(
@@ -206,10 +185,10 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
     );
     $stmt->execute([
         $args['id'],
-        $statusCode,
-        $seo['h1'],
-        $seo['title'],
-        $seo['description'],
+        $checkResult['statusCode'],
+        $checkResult['seo']['h1'],
+        $checkResult['seo']['title'],
+        $checkResult['seo']['description'],
         $createdAt->toDateTimeString(),
     ]);
 

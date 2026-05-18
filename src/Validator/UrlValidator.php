@@ -53,7 +53,7 @@ final class UrlValidator
         $normalized = "{$scheme}://{$host}";
 
         if (isset($parsed['port'])) {
-            $normalized .= ':' . $parsed['port'];
+            $normalized .= ':' . (int) $parsed['port'];
         }
 
         return $normalized;
@@ -117,11 +117,7 @@ final class UrlValidator
             return true;
         }
 
-        $port = $parsed['port'];
-
-        if (!is_int($port)) {
-            return false;
-        }
+        $port = (int) $parsed['port'];
 
         return $port >= self::MIN_PORT && $port <= self::MAX_PORT;
     }
