@@ -55,6 +55,7 @@ final class PageChecker
         } catch (RequestException $e) {
             $response = $e->getResponse();
         } catch (ConnectException | GuzzleException) {
+            $response = null;
         }
 
         return $response;
