@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Database;
 
+use App\Exception\DatabaseConfigException;
 use PDO;
-use RuntimeException;
 
 final class PdoFactory
 {
@@ -14,7 +14,7 @@ final class PdoFactory
         $databaseUrlRaw = trim((string) ($_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL') ?: ''));
 
         if ($databaseUrlRaw === '') {
-            throw new RuntimeException(
+            throw new DatabaseConfigException(
                 'Не задан DATABASE_URL. Пример: '
                 . 'export DATABASE_URL=postgresql://localhost:5432/page_analyzer '
                 . '(или запустите make start — Makefile подставит URL сам)'
@@ -44,7 +44,7 @@ final class PdoFactory
         }
 
         if ($dbname === '') {
-            throw new RuntimeException(
+            throw new DatabaseConfigException(
                 'В DATABASE_URL не указано имя базы. Пример: postgresql://localhost:5432/page_analyzer'
             );
         }
