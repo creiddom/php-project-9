@@ -48,15 +48,16 @@ final class PageChecker
             ],
         ]);
 
+        $response = null;
+
         try {
-            return $client->request('GET', $url);
-        } catch (ConnectException) {
-            return null;
+            $response = $client->request('GET', $url);
         } catch (RequestException $e) {
-            return $e->getResponse();
-        } catch (GuzzleException) {
-            return null;
+            $response = $e->getResponse();
+        } catch (ConnectException | GuzzleException) {
         }
+
+        return $response;
     }
 
     private function buildResult(ResponseInterface $response): CheckResult
