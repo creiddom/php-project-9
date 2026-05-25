@@ -19,9 +19,11 @@ $urls = $urls ?? [];
             <tr>
                 <td><?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td>
-                    <a href="/urls/<?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>">
-                        <?= htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>
-                    </a>
+                    <?php $urlName = htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>
+                    <a
+                        href="/urls/<?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>"
+                        aria-label="Просмотр сайта <?= $urlName ?>"
+                    ><?= $urlName ?></a>
                 </td>
                 <td><?= htmlspecialchars((string) $url['created_at'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) $url['last_status_code'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>

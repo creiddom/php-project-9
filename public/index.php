@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Exception\UrlsLoadFailedException;
 use App\Http\PageChecker;
 use App\SeoExtractor;
 use App\Support\DateFormatter;
@@ -15,7 +16,7 @@ use Slim\Factory\AppFactory;
 use Slim\Flash\Messages;
 use Slim\Views\PhpRenderer;
 
-require dirname(__DIR__) . '/vendor/autoload.php';
+require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 session_start();
 
@@ -51,7 +52,7 @@ $app = AppFactory::create();
 
 $app->addBodyParsingMiddleware();
 
-$app->get('/', function (Request $request, Response $response) use ($renderer, $flash): Response {
+$app->get('/', function (Response $response) use ($renderer, $flash): Response {
     return $renderer->render($response, 'home.php', [
         'title' => 'Анализатор страниц',
         'flash' => FlashPresenter::forTemplate($flash),
@@ -60,7 +61,7 @@ $app->get('/', function (Request $request, Response $response) use ($renderer, $
     ]);
 })->setName('home');
 
-$app->get('/urls', function (Request $request, Response $response) use ($renderer, $pdo, $flash): Response {
+$app->get('/urls', function (Response $response) use ($renderer, $pdo, $flash): Response {
     $stmt = $pdo->query(
         'SELECT urls.*,
             (SELECT status_code FROM url_checks
@@ -71,7 +72,7 @@ $app->get('/urls', function (Request $request, Response $response) use ($rendere
         ORDER BY urls.created_at DESC'
     );
     if ($stmt === false) {
-        throw new RuntimeException('Failed to load urls');
+        throw new UrlsLoadFailedException('Failed to load urls');
     }
     $urls = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -109,39 +110,38 @@ $app->post('/urls', function (Request $request, Response $response) use ($render
     }
 
     $normalizedUrl = $urlValidator->normalize($urlName);
+    $routeParser = $app->getRouteCollector()->getRouteParser();
 
     $stmt = $pdo->prepare('SELECT id FROM urls WHERE name = ?');
     $stmt->execute([$normalizedUrl]);
     $existingUrl = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    $routeParser = $app->getRouteCollector()->getRouteParser();
-
     if ($existingUrl !== false) {
-        $flash->addMessage('success', 'Страница уже существует');
+        $urlId = (string) $existingUrl['id'];
+        $flashMessage = 'Страница уже существует';
+    } else {
+        $createdAt = Carbon::now();
 
-        return $response
-            ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => (string) $existingUrl['id']]))
-            ->withStatus(302);
+        $stmt = $pdo->prepare('INSERT INTO urls (name, created_at) VALUES (?, ?) RETURNING id');
+        $stmt->execute([$normalizedUrl, $createdAt->toDateTimeString()]);
+        $id = $stmt->fetchColumn();
+
+        if ($id === false) {
+            return $response->withStatus(500);
+        }
+
+        $urlId = (string) $id;
+        $flashMessage = 'Страница успешно добавлена';
     }
 
-    $createdAt = Carbon::now();
-
-    $stmt = $pdo->prepare('INSERT INTO urls (name, created_at) VALUES (?, ?) RETURNING id');
-    $stmt->execute([$normalizedUrl, $createdAt->toDateTimeString()]);
-    $id = $stmt->fetchColumn();
-
-    if ($id === false) {
-        return $response->withStatus(500);
-    }
-
-    $flash->addMessage('success', 'Страница успешно добавлена');
+    $flash->addMessage('success', $flashMessage);
 
     return $response
-        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => (string) $id]))
+        ->withHeader('Location', $routeParser->urlFor('urls.show', ['id' => $urlId]))
         ->withStatus(302);
 })->setName('urls.store');
 
-$app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $response, array $args) use ($pdo, $flash, $app, $pageChecker): Response {
+$app->post('/urls/{id:[0-9]+}/checks', function (Response $response, array $args) use ($pdo, $flash, $app, $pageChecker): Response {
     $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
     $url = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -184,7 +184,7 @@ $app->post('/urls/{id:[0-9]+}/checks', function (Request $request, Response $res
     return $redirect;
 })->setName('urls.checks');
 
-$app->get('/urls/{id:[0-9]+}', function (Request $request, Response $response, array $args) use ($renderer, $pdo, $flash): Response {
+$app->get('/urls/{id:[0-9]+}', function (Response $response, array $args) use ($renderer, $pdo, $flash): Response {
     $stmt = $pdo->prepare('SELECT * FROM urls WHERE id = ?');
     $stmt->execute([$args['id']]);
     $url = $stmt->fetch(PDO::FETCH_ASSOC);

@@ -8,17 +8,23 @@ $checks = $checks ?? [];
 <h1 class="display-6 mb-4">Сайт: <?= htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></h1>
 
 <table class="table table-bordered" data-test="url">
+    <thead>
+        <tr>
+            <th>Поле</th>
+            <th>Значение</th>
+        </tr>
+    </thead>
     <tbody>
         <tr>
-            <td>ID</td>
+            <th scope="row">ID</th>
             <td><?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
         </tr>
         <tr>
-            <td>Имя</td>
+            <th scope="row">Имя</th>
             <td><?= htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
         </tr>
         <tr>
-            <td>Дата создания</td>
+            <th scope="row">Дата создания</th>
             <td><?= htmlspecialchars((string) $url['created_at'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
         </tr>
     </tbody>

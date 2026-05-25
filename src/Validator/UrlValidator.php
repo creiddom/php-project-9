@@ -25,24 +25,17 @@ final class UrlValidator
     public function validate(string $url): ?string
     {
         $url = trim($url);
+        $error = null;
 
         if ($url === '') {
-            return self::ERROR_EMPTY;
+            $error = self::ERROR_EMPTY;
+        } elseif (mb_strlen($url) > self::MAX_LENGTH) {
+            $error = self::ERROR_TOO_LONG;
+        } elseif (preg_match('/\s/u', $url) === 1 || !$this->isValidUrl($url)) {
+            $error = self::ERROR_INVALID;
         }
 
-        if (mb_strlen($url) > self::MAX_LENGTH) {
-            return self::ERROR_TOO_LONG;
-        }
-
-        if (preg_match('/\s/u', $url) === 1) {
-            return self::ERROR_INVALID;
-        }
-
-        if (!$this->isValidUrl($url)) {
-            return self::ERROR_INVALID;
-        }
-
-        return null;
+        return $error;
     }
 
     public function normalize(string $url): string
@@ -61,31 +54,14 @@ final class UrlValidator
 
     private function isValidUrl(string $url): bool
     {
-        if (filter_var($url, FILTER_VALIDATE_URL) === false) {
-            return false;
-        }
-
         $parsed = parse_url($url);
 
-        if (!is_array($parsed)) {
-            return false;
-        }
-
-        if (!$this->hasAllowedScheme($parsed)) {
-            return false;
-        }
-
-        if ($this->hasCredentials($parsed)) {
-            return false;
-        }
-
-        if (!$this->hasValidPort($parsed)) {
-            return false;
-        }
-
-        $host = $parsed['host'] ?? '';
-
-        return $this->isValidHost($host);
+        return filter_var($url, FILTER_VALIDATE_URL) !== false
+            && is_array($parsed)
+            && $this->hasAllowedScheme($parsed)
+            && !$this->hasCredentials($parsed)
+            && $this->hasValidPort($parsed)
+            && $this->isValidHost($parsed['host'] ?? '');
     }
 
     /**
@@ -124,19 +100,10 @@ final class UrlValidator
 
     private function isValidHost(string $host): bool
     {
-        if ($host === '' || strlen($host) > self::MAX_HOST_LENGTH) {
-            return false;
-        }
-
-        if (preg_match('/[\s@\/\\\\]/', $host) === 1) {
-            return false;
-        }
-
-        if ($this->isValidIpHost($host)) {
-            return true;
-        }
-
-        return $this->isValidDomainHost($host);
+        return $host !== ''
+            && strlen($host) <= self::MAX_HOST_LENGTH
+            && preg_match('/[\s@\/\\\\]/', $host) !== 1
+            && ($this->isValidIpHost($host) || $this->isValidDomainHost($host));
     }
 
     private function isValidIpHost(string $host): bool
@@ -156,30 +123,24 @@ final class UrlValidator
 
     private function isValidDomainHost(string $host): bool
     {
-        if (str_starts_with($host, '-') || str_ends_with($host, '-')) {
-            return false;
-        }
+        $isValid = !str_starts_with($host, '-') && !str_ends_with($host, '-')
+            && !str_contains($host, '..')
+            && preg_match('/^[a-z0-9.-]+$/i', $host) === 1;
 
-        if (str_contains($host, '..')) {
-            return false;
-        }
-
-        if (preg_match('/^[a-z0-9.-]+$/i', $host) !== 1) {
-            return false;
-        }
-
-        $labels = explode('.', $host);
-
-        foreach ($labels as $label) {
-            if ($label === '' || strlen($label) > 63) {
-                return false;
-            }
-
-            if (str_starts_with($label, '-') || str_ends_with($label, '-')) {
-                return false;
+        if ($isValid) {
+            foreach (explode('.', $host) as $label) {
+                if (
+                    $label === ''
+                    || strlen($label) > 63
+                    || str_starts_with($label, '-')
+                    || str_ends_with($label, '-')
+                ) {
+                    $isValid = false;
+                    break;
+                }
             }
         }
 
-        return true;
+        return $isValid;
     }
 }

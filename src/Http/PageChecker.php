@@ -6,7 +6,6 @@ namespace App\Http;
 
 use App\SeoExtractor;
 use GuzzleHttp\Client;
-use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
@@ -29,17 +28,17 @@ final class PageChecker
             'allow_redirects' => false,
         ]);
 
+        $response = null;
+
         try {
             $response = $client->request('GET', $url);
-        } catch (ConnectException) {
-            return CheckResult::failed(self::CONNECTION_ERROR);
         } catch (RequestException $e) {
             $response = $e->getResponse();
-
-            if ($response === null) {
-                return CheckResult::failed(self::CONNECTION_ERROR);
-            }
         } catch (GuzzleException) {
+            $response = null;
+        }
+
+        if ($response === null) {
             return CheckResult::failed(self::CONNECTION_ERROR);
         }
 
