@@ -3,15 +3,18 @@
     "description": "Hexlet PHP project",
     "type": "project",
     "require": {
-        "php": "^8.4",
+        "php": "^8.2",
         "guzzlehttp/guzzle": "^7.10",
         "nesbot/carbon": "^3.11",
+        "php-di/php-di": "^7.0",
         "slim/flash": "^0.4.0",
+        "slim/http": "^1.0",
         "slim/php-view": "^3.4",
         "slim/psr7": "^1.7",
         "slim/slim": "^4.14",
-        "symfony/css-selector": "^8.0",
-        "symfony/dom-crawler": "^8.0"
+        "symfony/css-selector": "^7.0",
+        "symfony/dom-crawler": "^7.0",
+        "vlucas/valitron": "^1.4"
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
@@ -23,7 +26,9 @@
         }
     },
     "config": {
-        "sort-packages": true
+        "sort-packages": true,
+        "platform": {
+        }
     },
     "scripts": {
         "lint": "phpcs",

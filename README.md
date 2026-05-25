@@ -1,3 +1,7 @@
+# Hexlet tests and linter status
+
+[![Actions Status](https://github.com/creiddom/php-project-9/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/creiddom/php-project-9/actions) [![Lint](https://github.com/creiddom/php-project-9/actions/workflows/lint.yml/badge.svg)](https://github.com/creiddom/php-project-9/actions) [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=creiddom_php-project-9&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=creiddom_php-project-9)
+
 # Анализатор страниц
 
 Веб-приложение для добавления сайтов и периодической проверки их доступности и базовых SEO-показателей. Учебный проект [Hexlet](https://ru.hexlet.io) по PHP.
@@ -28,18 +32,20 @@
 
 ```bash
 composer install
-export DATABASE_URL="pgsql://user:password@localhost:5432/dbname"
-psql -d "$DATABASE_URL" -f database.sql
+createdb page_analyzer   # один раз, если базы ещё нет
+
+export DATABASE_URL="postgresql://localhost:5432/page_analyzer"
+# с логином: postgresql://user:password@localhost:5432/page_analyzer
+
+make db
 make start
 ```
 
+`make start` и `make db` подставят тот же URL, если переменная не экспортирована — но **лучше задать `DATABASE_URL` явно** (в терминале или в Render).
+
+На Render: **Environment → DATABASE_URL** = External Database URL из панели PostgreSQL.
+
 Приложение будет доступно по адресу http://localhost:8000
-
-### Hexlet tests and linter status
-
-[![Actions Status](https://github.com/creiddom/php-project-9/actions/workflows/hexlet-check.yml/badge.svg)](https://github.com/creiddom/php-project-9/actions)
-
-[![Lint](https://github.com/creiddom/php-project-9/actions/workflows/lint.yml/badge.svg)](https://github.com/creiddom/php-project-9/actions)
 
 ### Deploy
 

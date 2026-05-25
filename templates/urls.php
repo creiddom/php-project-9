@@ -1,5 +1,7 @@
 <?php
 
+/** @var \App\View\RoutePresenter $route */
+
 $urls = $urls ?? [];
 
 ?>
@@ -21,7 +23,7 @@ $urls = $urls ?? [];
                 <td>
                     <?php $urlName = htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>
                     <a
-                        href="/urls/<?= htmlspecialchars((string) $url['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>"
+                        href="<?= htmlspecialchars($route->for('urls.show', ['id' => $url['id']]), ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>"
                         aria-label="Просмотр сайта <?= $urlName ?>"
                     ><?= $urlName ?></a>
                 </td>

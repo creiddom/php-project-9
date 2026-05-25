@@ -19,8 +19,11 @@ install:
 vendor/bin/phpcs vendor/bin/phpstan: composer.json composer.lock
 	composer install
 
+LOCAL_DATABASE_URL ?= postgresql://localhost:5432/page_analyzer
+
 start:
-	PHP_CLI_SERVER_WORKERS=5 php -S 0.0.0.0:$(PORT) -t public public/index.php
+	DATABASE_URL="$${DATABASE_URL:-$(LOCAL_DATABASE_URL)}" \
+	php -S 0.0.0.0:$(PORT) -t public public/index.php
 
 lint: lint-phpcs lint-phpstan
 
@@ -35,4 +38,5 @@ lint-phpstan: vendor/bin/phpstan
 	@echo "phpstan: OK"
 
 db:
-	psql -d "$(DATABASE_URL)" -f database.sql
+	DATABASE_URL="$${DATABASE_URL:-$(LOCAL_DATABASE_URL)}" \
+	psql -d "$$DATABASE_URL" -f database.sql

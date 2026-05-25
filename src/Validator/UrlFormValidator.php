@@ -4,8 +4,16 @@ declare(strict_types=1);
 
 namespace App\Validator;
 
-final class UrlValidator
+use Valitron\Validator;
+
+final class UrlFormValidator
 {
+    public const ERROR_EMPTY = 'URL не должен быть пустым';
+
+    public const ERROR_TOO_LONG = 'URL превышает 255 символов';
+
+    public const ERROR_INVALID = 'Некорректный URL';
+
     private const MAX_LENGTH = 255;
 
     private const MAX_HOST_LENGTH = 253;
@@ -16,40 +24,61 @@ final class UrlValidator
 
     private const ALLOWED_SCHEMES = ['http', 'https'];
 
-    public const ERROR_EMPTY = 'URL не должен быть пустым';
-
-    public const ERROR_TOO_LONG = 'URL превышает 255 символов';
-
-    public const ERROR_INVALID = 'Некорректный URL';
-
-    public function validate(string $url): ?string
+    /**
+     * @param array<string, mixed>|null $data
+     */
+    public function validate(?array $data): UrlValidationResult
     {
-        $url = trim($url);
-        $error = null;
+        $validator = new Validator($data ?? []);
+        $validator->addInstanceRule('appUrl', $this->validateAppUrl(...), self::ERROR_INVALID);
 
-        if ($url === '') {
-            $error = self::ERROR_EMPTY;
-        } elseif (mb_strlen($url) > self::MAX_LENGTH) {
-            $error = self::ERROR_TOO_LONG;
-        } elseif (preg_match('/\s/u', $url) === 1 || !$this->isValidUrl($url)) {
-            $error = self::ERROR_INVALID;
+        $validator->rule('required', 'url')->message(self::ERROR_EMPTY);
+        $validator->rule('lengthMax', 'url', self::MAX_LENGTH)->message(self::ERROR_TOO_LONG);
+        $validator->rule('url', 'url')->message(self::ERROR_INVALID);
+        $validator->rule('appUrl', 'url');
+
+        $url = trim((string) ($data['url'] ?? ''));
+
+        if (!$validator->validate()) {
+            return new UrlValidationResult(false, $this->collectErrors($validator), $url);
         }
 
-        return $error;
+        return new UrlValidationResult(true, [], $url);
     }
 
-    public function normalize(string $url): string
+    /**
+     * @param array<string, mixed> $params
+     * @param array<string, mixed> $fields
+     */
+    private function validateAppUrl(string $field, mixed $value, array $params, array $fields): bool
     {
-        $parsed = parse_url(trim($url));
-        $scheme = strtolower($parsed['scheme'] ?? '');
-        $host = strtolower($parsed['host'] ?? '');
-        $normalized = "{$scheme}://{$host}";
+        unset($field, $params, $fields);
 
-        if (isset($parsed['port'])) {
-            $normalized .= ':' . (int) $parsed['port'];
+        if (!is_string($value)) {
+            return false;
         }
 
-        return $normalized;
+        $url = trim($value);
+
+        if ($url === '' || preg_match('/\s/u', $url) === 1) {
+            return false;
+        }
+
+        return $this->isValidUrl($url);
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function collectErrors(Validator $validator): array
+    {
+        $errors = $validator->errors('url');
+
+        if (!is_array($errors)) {
+            return [];
+        }
+
+        return array_values($errors);
     }
 
     private function isValidUrl(string $url): bool

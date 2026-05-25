@@ -1,0 +1,24 @@
+# VCS and CI
+.git
+.gitattributes
+.github
+
+# Secrets and local env
+.env
+.env.*
+
+# Dependencies (installed in image)
+vendor
+
+# Dev / lint (not needed at runtime)
+phpcs.xml
+phpstan.neon
+
+# Docs and misc
+README.md
+*.md
+.idea
+.vscode
+.DS_Store
+*.log
+tmp

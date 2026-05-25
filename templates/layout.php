@@ -1,5 +1,8 @@
 <?php
 
+/** @var \App\View\RoutePresenter $route */
+/** @var \App\View\TemplateFlash $flash */
+
 $content = $content ?? '';
 
 ?>
@@ -15,16 +18,16 @@ $content = $content ?? '';
 <body class="d-flex flex-column min-vh-100">
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container-fluid d-flex flex-wrap align-items-center">
-        <a class="navbar-brand mb-0" href="/">Анализатор страниц</a>
-        <a class="nav-link mb-0 ms-3 link-light link-opacity-75" href="/urls">Сайты</a>
+        <a class="navbar-brand mb-0" href="<?= htmlspecialchars($route->for('home'), ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>">Анализатор страниц</a>
+        <a class="nav-link mb-0 ms-3 link-light link-opacity-75" href="<?= htmlspecialchars($route->for('urls.index'), ENT_QUOTES | ENT_HTML5, 'UTF-8') ?>">Сайты</a>
     </div>
 </nav>
 <main class="flex-grow-1">
     <div class="container-lg mt-3">
-        <?php foreach ($flash ?? [] as $message) : ?>
+        <?php foreach ($flash as $message) : ?>
             <?php
-            $type = htmlspecialchars((string)($message['type'] ?? 'info'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $text = htmlspecialchars((string)($message['text'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $type = htmlspecialchars($message['type'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $text = htmlspecialchars($message['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             ?>
             <div class="alert alert-<?= $type ?>" role="alert"><?= $text ?></div>
         <?php endforeach; ?>

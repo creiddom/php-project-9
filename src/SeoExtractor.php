@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use Symfony\Component\DomCrawler\Crawler;
+use Throwable;
 
 final class SeoExtractor
 {
@@ -13,8 +14,22 @@ final class SeoExtractor
      */
     public function extract(string $html): array
     {
-        $crawler = new Crawler();
-        $crawler->addHtmlContent($html);
+        $empty = [
+            'h1' => null,
+            'title' => null,
+            'description' => null,
+        ];
+
+        if (trim($html) === '') {
+            return $empty;
+        }
+
+        try {
+            $crawler = new Crawler();
+            $crawler->addHtmlContent($html, 'UTF-8');
+        } catch (Throwable) {
+            return $empty;
+        }
 
         return [
             'h1' => $this->nodeText($crawler, 'h1'),
@@ -25,7 +40,11 @@ final class SeoExtractor
 
     private function nodeText(Crawler $crawler, string $selector): ?string
     {
-        $nodes = $crawler->filter($selector);
+        try {
+            $nodes = $crawler->filter($selector);
+        } catch (Throwable) {
+            return null;
+        }
 
         if ($nodes->count() === 0) {
             return null;
@@ -36,7 +55,11 @@ final class SeoExtractor
 
     private function metaDescription(Crawler $crawler): ?string
     {
-        $nodes = $crawler->filter('meta[name="description"]');
+        try {
+            $nodes = $crawler->filter('meta[name="description"]');
+        } catch (Throwable) {
+            return null;
+        }
 
         if ($nodes->count() === 0) {
             return null;

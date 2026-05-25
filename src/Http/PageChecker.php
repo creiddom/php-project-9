@@ -6,13 +6,17 @@ namespace App\Http;
 
 use App\SeoExtractor;
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
 use Psr\Http\Message\ResponseInterface;
+use Throwable;
 
 final class PageChecker
 {
     public const CONNECTION_ERROR = 'Произошла ошибка при проверке, не удалось подключиться';
+
+    private const REDIRECT_LIMIT = 5;
 
     public function __construct(
         private readonly SeoExtractor $seoExtractor,
@@ -25,20 +29,25 @@ final class PageChecker
             'timeout' => 10,
             'connect_timeout' => 5,
             'http_errors' => false,
-            'allow_redirects' => false,
+            'allow_redirects' => [
+                'max' => self::REDIRECT_LIMIT,
+                'strict' => false,
+                'referer' => false,
+                'protocols' => ['http', 'https'],
+            ],
         ]);
-
-        $response = null;
 
         try {
             $response = $client->request('GET', $url);
+        } catch (ConnectException) {
+            return CheckResult::failed(self::CONNECTION_ERROR);
         } catch (RequestException $e) {
             $response = $e->getResponse();
-        } catch (GuzzleException) {
-            $response = null;
-        }
 
-        if ($response === null) {
+            if ($response === null) {
+                return CheckResult::failed(self::CONNECTION_ERROR);
+            }
+        } catch (GuzzleException) {
             return CheckResult::failed(self::CONNECTION_ERROR);
         }
 
@@ -53,7 +62,15 @@ final class PageChecker
             return CheckResult::failed(self::CONNECTION_ERROR);
         }
 
-        $seo = $this->seoExtractor->extract((string) $response->getBody());
+        try {
+            $seo = $this->seoExtractor->extract((string) $response->getBody());
+        } catch (Throwable) {
+            $seo = [
+                'h1' => null,
+                'title' => null,
+                'description' => null,
+            ];
+        }
 
         return CheckResult::succeeded($statusCode, $seo);
     }

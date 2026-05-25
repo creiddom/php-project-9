@@ -13,17 +13,20 @@ final class FlashPresenter
      */
     public static function forTemplate(Messages $flash): array
     {
-        $result = [];
+        $messagesByType = $flash->getMessages();
 
-        foreach ($flash->getMessages() as $type => $messages) {
-            foreach ($messages as $message) {
-                $result[] = [
-                    'type' => $type,
-                    'text' => $message,
-                ];
-            }
-        }
-
-        return $result;
+        return array_merge(
+            ...array_map(
+                static fn (string $type, array $messages): array => array_map(
+                    static fn (string $message): array => [
+                        'type' => $type,
+                        'text' => $message,
+                    ],
+                    $messages,
+                ),
+                array_keys($messagesByType),
+                array_values($messagesByType),
+            ),
+        );
     }
 }
