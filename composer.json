@@ -33,9 +33,7 @@
         }
     },
     "config": {
-        "sort-packages": true,
-        "platform": {
-        }
+        "sort-packages": true
     },
     "scripts": {
         "lint": "phpcs",
