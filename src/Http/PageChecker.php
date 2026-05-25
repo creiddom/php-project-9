@@ -25,6 +25,17 @@ final class PageChecker
 
     public function check(string $url): CheckResult
     {
+        $response = $this->request($url);
+
+        if ($response === null) {
+            return CheckResult::failed(self::CONNECTION_ERROR);
+        }
+
+        return $this->buildResult($response);
+    }
+
+    private function request(string $url): ?ResponseInterface
+    {
         $client = new Client([
             'timeout' => 10,
             'connect_timeout' => 5,
@@ -38,20 +49,14 @@ final class PageChecker
         ]);
 
         try {
-            $response = $client->request('GET', $url);
+            return $client->request('GET', $url);
         } catch (ConnectException) {
-            return CheckResult::failed(self::CONNECTION_ERROR);
+            return null;
         } catch (RequestException $e) {
-            $response = $e->getResponse();
-
-            if ($response === null) {
-                return CheckResult::failed(self::CONNECTION_ERROR);
-            }
+            return $e->getResponse();
         } catch (GuzzleException) {
-            return CheckResult::failed(self::CONNECTION_ERROR);
+            return null;
         }
-
-        return $this->buildResult($response);
     }
 
     private function buildResult(ResponseInterface $response): CheckResult
