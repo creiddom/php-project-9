@@ -12,8 +12,8 @@ $checks = $checks ?? [];
 <table class="table table-bordered" data-test="url">
     <thead>
         <tr>
-            <th>Поле</th>
-            <th>Значение</th>
+            <th scope="col">Поле</th>
+            <th scope="col">Значение</th>
         </tr>
     </thead>
     <tbody>
@@ -41,12 +41,12 @@ $checks = $checks ?? [];
 <table class="table table-bordered" data-test="checks">
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Код ответа</th>
-            <th>h1</th>
-            <th>title</th>
-            <th>description</th>
-            <th>Дата создания</th>
+            <th scope="col">ID</th>
+            <th scope="col">Код ответа</th>
+            <th scope="col">h1</th>
+            <th scope="col">title</th>
+            <th scope="col">description</th>
+            <th scope="col">Дата создания</th>
         </tr>
     </thead>
     <tbody>

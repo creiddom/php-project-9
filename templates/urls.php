@@ -10,10 +10,10 @@ $urls = $urls ?? [];
 <table class="table table-bordered table-hover" data-test="urls">
     <thead>
         <tr>
-            <th>ID</th>
-            <th>Имя</th>
-            <th>Дата создания</th>
-            <th>Код ответа</th>
+            <th scope="col">ID</th>
+            <th scope="col">Имя</th>
+            <th scope="col">Дата создания</th>
+            <th scope="col">Код ответа</th>
         </tr>
     </thead>
     <tbody>
