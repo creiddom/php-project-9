@@ -20,6 +20,7 @@ final class PageChecker
 
     public function __construct(
         private readonly SeoExtractor $seoExtractor,
+        private readonly ?Client $client = null,
     ) {
     }
 
@@ -36,7 +37,7 @@ final class PageChecker
 
     private function request(string $url): ?ResponseInterface
     {
-        $client = new Client([
+        $client = $this->client ?? new Client([
             'timeout' => 10,
             'connect_timeout' => 5,
             'http_errors' => false,

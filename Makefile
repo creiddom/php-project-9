@@ -1,6 +1,6 @@
 PORT ?= 8000
 
-.PHONY: help install start lint lint-phpcs lint-phpstan db
+.PHONY: help install start test lint lint-phpcs lint-phpstan db
 
 .DEFAULT_GOAL := help
 
@@ -8,6 +8,7 @@ help:
 	@echo "Доступные команды:"
 	@echo "  make install       — composer install"
 	@echo "  make start         — сервер: http://localhost:$(PORT)"
+	@echo "  make test          — phpunit + coverage.xml (для Sonar)"
 	@echo "  make lint          — phpcs + phpstan (перед пушем)"
 	@echo "  make lint-phpcs    — только стиль кода (phpcs)"
 	@echo "  make lint-phpstan  — только статический анализ (phpstan)"
@@ -16,7 +17,11 @@ help:
 install:
 	composer install
 
-vendor/bin/phpcs vendor/bin/phpstan: composer.json composer.lock
+test: vendor/bin/phpunit
+	@php vendor/bin/phpunit --coverage-clover=coverage.xml
+	@echo "coverage.xml создан"
+
+vendor/bin/phpunit vendor/bin/phpcs vendor/bin/phpstan: composer.json composer.lock
 	composer install
 
 LOCAL_DATABASE_URL ?= postgresql://localhost:5432/page_analyzer

@@ -17,12 +17,19 @@
         "vlucas/valitron": "^1.4"
     },
     "require-dev": {
+        "dg/bypass-finals": "^1.9",
         "phpstan/phpstan": "^2.1",
+        "phpunit/phpunit": "^11.5",
         "squizlabs/php_codesniffer": "^3.11"
     },
     "autoload": {
         "psr-4": {
             "App\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
         }
     },
     "config": {
@@ -32,6 +39,7 @@
     },
     "scripts": {
         "lint": "phpcs",
-        "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=256M"
+        "phpstan": "phpstan analyse -c phpstan.neon --memory-limit=256M",
+        "test": "phpunit --coverage-clover coverage.xml"
     }
 }
