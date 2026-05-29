@@ -29,7 +29,13 @@ final class UrlFormValidator
      */
     public function validate(?array $data): UrlValidationResult
     {
-        $validator = new Validator($data ?? []);
+        $data = $data ?? [];
+
+        if (array_key_exists('url', $data)) {
+            $data['url'] = trim((string) $data['url']);
+        }
+
+        $validator = new Validator($data);
         $validator->addInstanceRule('appUrl', $this->validateAppUrl(...), self::ERROR_INVALID);
 
         $validator->rule('required', 'url')->message(self::ERROR_EMPTY);
@@ -37,7 +43,7 @@ final class UrlFormValidator
         $validator->rule('url', 'url')->message(self::ERROR_INVALID);
         $validator->rule('appUrl', 'url');
 
-        $url = trim((string) ($data['url'] ?? ''));
+        $url = (string) ($data['url'] ?? '');
 
         if (!$validator->validate()) {
             return new UrlValidationResult(false, $this->collectErrors($validator), $url);

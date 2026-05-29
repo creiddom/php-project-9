@@ -8,8 +8,8 @@ CREATE TABLE IF NOT EXISTS url_checks (
     id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     url_id bigint NOT NULL REFERENCES urls(id),
     status_code int,
-    h1 varchar(255),
-    title varchar(255),
+    h1 varchar(1024),
+    title varchar(1024),
     description text,
     created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

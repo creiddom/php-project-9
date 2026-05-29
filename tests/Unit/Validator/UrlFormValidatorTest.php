@@ -25,9 +25,25 @@ final class UrlFormValidatorTest extends TestCase
         $this->assertSame('https://example.com/path', $result->url);
     }
 
+    public function testValidUrlWithTrailingSpace(): void
+    {
+        $result = $this->validator->validate(['url' => 'https://mail.ru ']);
+
+        $this->assertTrue($result->valid);
+        $this->assertSame('https://mail.ru', $result->url);
+    }
+
     public function testEmptyUrl(): void
     {
         $result = $this->validator->validate(['url' => '']);
+
+        $this->assertFalse($result->valid);
+        $this->assertContains(UrlFormValidator::ERROR_EMPTY, $result->errors);
+    }
+
+    public function testWhitespaceOnlyUrl(): void
+    {
+        $result = $this->validator->validate(['url' => '   ']);
 
         $this->assertFalse($result->valid);
         $this->assertContains(UrlFormValidator::ERROR_EMPTY, $result->errors);
