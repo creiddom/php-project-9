@@ -36,21 +36,23 @@ final class UrlRepositoryTest extends TestCase
         (new UrlRepository($pdo))->findAllOrdered();
     }
 
-    public function testFindLatestStatusCodeByUrlId(): void
+    public function testFindAllOrderedIncludesLatestStatusCode(): void
     {
         $pdo = $this->createMock(PDO::class);
         $stmt = $this->createMock(PDOStatement::class);
+        $rows = [
+            [
+                'id' => 1,
+                'name' => 'https://a.ru',
+                'created_at' => '2024-01-01',
+                'last_status_code' => 200,
+            ],
+        ];
 
         $pdo->method('query')->willReturn($stmt);
-        $stmt->method('fetchAll')->willReturn([
-            ['url_id' => 1, 'status_code' => 200],
-            ['url_id' => 2, 'status_code' => 404],
-        ]);
+        $stmt->method('fetchAll')->with(PDO::FETCH_ASSOC)->willReturn($rows);
 
-        $result = (new UrlRepository($pdo))->findLatestStatusCodeByUrlId();
-
-        $this->assertSame(200, $result[1]);
-        $this->assertSame(404, $result[2]);
+        $this->assertSame($rows, (new UrlRepository($pdo))->findAllOrdered());
     }
 
     public function testFindByIdReturnsRowOrNull(): void
@@ -85,16 +87,6 @@ final class UrlRepositoryTest extends TestCase
 
         $this->assertSame(['id' => 5], $repository->findIdByName('https://d.ru'));
         $this->assertSame('6', $repository->insert('https://e.ru', '2024-05-25 10:00:00'));
-    }
-
-    public function testFindLatestStatusCodeByUrlIdThrowsWhenQueryFails(): void
-    {
-        $pdo = $this->createMock(PDO::class);
-        $pdo->method('query')->willReturn(false);
-
-        $this->expectException(UrlsLoadFailedException::class);
-
-        (new UrlRepository($pdo))->findLatestStatusCodeByUrlId();
     }
 
     public function testFindChecksByUrlId(): void

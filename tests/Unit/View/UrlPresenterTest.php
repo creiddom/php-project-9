@@ -12,11 +12,11 @@ final class UrlPresenterTest extends TestCase
     public function testForIndexList(): void
     {
         $urls = [
-            ['id' => 1, 'name' => 'https://a.ru', 'created_at' => '2024-01-01 10:00:00'],
-            ['id' => 2, 'name' => 'https://b.ru', 'created_at' => '2024-01-02 10:00:00'],
+            ['id' => 1, 'name' => 'https://a.ru', 'created_at' => '2024-01-01 10:00:00', 'last_status_code' => 200],
+            ['id' => 2, 'name' => 'https://b.ru', 'created_at' => '2024-01-02 10:00:00', 'last_status_code' => null],
         ];
 
-        $result = UrlPresenter::forIndexList($urls, [1 => 200]);
+        $result = UrlPresenter::forIndexList($urls);
 
         $this->assertSame('200', $result[0]['last_status_code']);
         $this->assertSame('', $result[1]['last_status_code']);

@@ -17,9 +17,13 @@ final class UrlsIndexActionTest extends TestCase
     {
         $repository = $this->createMock(UrlRepository::class);
         $repository->method('findAllOrdered')->willReturn([
-            ['id' => 1, 'name' => 'https://a.ru', 'created_at' => '2024-01-01 00:00:00'],
+            [
+                'id' => 1,
+                'name' => 'https://a.ru',
+                'created_at' => '2024-01-01 00:00:00',
+                'last_status_code' => 200,
+            ],
         ]);
-        $repository->method('findLatestStatusCodeByUrlId')->willReturn([1 => 200]);
 
         $renderer = RendererFactory::create();
         $action = new UrlsIndexAction($renderer, $repository);

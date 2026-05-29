@@ -10,17 +10,15 @@ use App\Text;
 final class UrlPresenter
 {
     /**
-     * @param list<array<string, mixed>>     $urls
-     * @param array<int|string, mixed>       $statusByUrlId
+     * @param list<array<string, mixed>> $urls
      *
      * @return list<array<string, mixed>>
      */
-    public static function forIndexList(array $urls, array $statusByUrlId): array
+    public static function forIndexList(array $urls): array
     {
         return array_map(
-            static function (array $url) use ($statusByUrlId): array {
-                $urlId = $url['id'];
-                $statusCode = $statusByUrlId[$urlId] ?? null;
+            static function (array $url): array {
+                $statusCode = $url['last_status_code'] ?? null;
 
                 return [
                     'id' => $url['id'],
