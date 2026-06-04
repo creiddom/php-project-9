@@ -1,9 +1,8 @@
 <?php
 
 /** @var \App\View\RoutePresenter $route */
-
-$errors = $errors ?? [];
-$urlName = $urlName ?? '';
+/** @var list<string> $errors */
+/** @var string $urlName */
 
 ?>
 <div class="row">

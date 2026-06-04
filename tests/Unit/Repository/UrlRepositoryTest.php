@@ -36,23 +36,32 @@ final class UrlRepositoryTest extends TestCase
         (new UrlRepository($pdo))->findAllOrdered();
     }
 
-    public function testFindAllOrderedIncludesLatestStatusCode(): void
+    public function testFindLatestStatusCodeByUrlId(): void
     {
         $pdo = $this->createMock(PDO::class);
         $stmt = $this->createMock(PDOStatement::class);
         $rows = [
-            [
-                'id' => 1,
-                'name' => 'https://a.ru',
-                'created_at' => '2024-01-01',
-                'last_status_code' => 200,
-            ],
+            ['url_id' => 1, 'status_code' => 200],
+            ['url_id' => 2, 'status_code' => 404],
         ];
 
         $pdo->method('query')->willReturn($stmt);
         $stmt->method('fetchAll')->with(PDO::FETCH_ASSOC)->willReturn($rows);
 
-        $this->assertSame($rows, (new UrlRepository($pdo))->findAllOrdered());
+        $this->assertSame(
+            [1 => 200, 2 => 404],
+            (new UrlRepository($pdo))->findLatestStatusCodeByUrlId(),
+        );
+    }
+
+    public function testFindLatestStatusCodeByUrlIdThrowsWhenQueryFails(): void
+    {
+        $pdo = $this->createMock(PDO::class);
+        $pdo->method('query')->willReturn(false);
+
+        $this->expectException(UrlsLoadFailedException::class);
+
+        (new UrlRepository($pdo))->findLatestStatusCodeByUrlId();
     }
 
     public function testFindByIdReturnsRowOrNull(): void

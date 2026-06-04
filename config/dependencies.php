@@ -46,8 +46,8 @@ return static function (ContainerBuilder $builder): void {
 
             return AppFactory::create();
         },
-        RouteParserInterface::class => static function (App $app): RouteParserInterface {
-            return $app->getRouteCollector()->getRouteParser();
+        RouteParserInterface::class => static function (ContainerInterface $container): RouteParserInterface {
+            return $container->get(App::class)->getRouteCollector()->getRouteParser();
         },
         RoutePresenter::class => static fn (RouteParserInterface $routeParser): RoutePresenter => new RoutePresenter($routeParser),
         HttpErrorHandler::class => static function (ContainerInterface $container): HttpErrorHandler {

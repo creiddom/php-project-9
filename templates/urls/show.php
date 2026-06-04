@@ -1,12 +1,10 @@
 <?php
 
 /** @var \App\View\RoutePresenter $route */
-
-$url = $url ?? [];
-$checks = $checks ?? [];
+/** @var array<string, mixed> $url */
+/** @var list<array<string, mixed>> $checks */
 
 ?>
-
 <h1 class="display-6 mb-4">Сайт: <?= htmlspecialchars((string) $url['name'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></h1>
 
 <table class="table table-bordered" data-test="url">
@@ -53,7 +51,7 @@ $checks = $checks ?? [];
         <?php foreach ($checks as $check) : ?>
             <tr>
                 <td><?= htmlspecialchars((string) $check['id'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
-                <td><?= htmlspecialchars((string) ($check['status_code'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
+                <td><?= htmlspecialchars((string) $check['status_code'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) $check['h1'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) $check['title'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>
                 <td><?= htmlspecialchars((string) $check['description'], ENT_QUOTES | ENT_HTML5, 'UTF-8') ?></td>

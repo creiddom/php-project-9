@@ -20,13 +20,7 @@ final class UrlRepository
     public function findAllOrdered(): array
     {
         $stmt = $this->pdo->query(
-            'SELECT urls.id, urls.name, urls.created_at,
-                (SELECT status_code FROM url_checks
-                 WHERE url_id = urls.id
-                 ORDER BY created_at DESC
-                 LIMIT 1) AS last_status_code
-             FROM urls
-             ORDER BY urls.created_at DESC'
+            'SELECT id, name, created_at FROM urls ORDER BY created_at DESC, id DESC'
         );
 
         if ($stmt === false) {
@@ -34,6 +28,31 @@ final class UrlRepository
         }
 
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    public function findLatestStatusCodeByUrlId(): array
+    {
+        $stmt = $this->pdo->query(
+            'SELECT DISTINCT ON (url_id) url_id, status_code
+             FROM url_checks
+             ORDER BY url_id, created_at DESC, id DESC'
+        );
+
+        if ($stmt === false) {
+            throw new UrlsLoadFailedException('Failed to load url checks');
+        }
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $statusByUrlId = [];
+
+        foreach ($rows as $row) {
+            $statusByUrlId[(int) $row['url_id']] = $row['status_code'];
+        }
+
+        return $statusByUrlId;
     }
 
     /**

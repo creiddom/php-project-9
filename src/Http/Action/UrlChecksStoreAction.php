@@ -52,7 +52,7 @@ final class UrlChecksStoreAction
         $seo = $checkResult->seo ?? ['h1' => null, 'title' => null, 'description' => null];
 
         $this->urlRepository->insertCheck(
-            $args['id'],
+            (int) $args['id'],
             $checkResult->statusCode,
             $seo['h1'],
             $seo['title'],

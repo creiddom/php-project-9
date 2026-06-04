@@ -32,7 +32,7 @@ final class UrlsShowAction
 
         $checks = $this->urlRepository->findChecksByUrlId($args['id']);
 
-        return $this->renderer->render($response, 'url.php', [
+        return $this->renderer->render($response, 'urls/show.php', [
             'title' => 'Сайт',
             'url' => UrlPresenter::forShowPage($url),
             'checks' => UrlPresenter::forChecksList($checks),

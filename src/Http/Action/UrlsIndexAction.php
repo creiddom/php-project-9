@@ -23,10 +23,11 @@ final class UrlsIndexAction
         unset($request);
 
         $urls = $this->urlRepository->findAllOrdered();
+        $statusByUrlId = $this->urlRepository->findLatestStatusCodeByUrlId();
 
-        return $this->renderer->render($response, 'urls.php', [
+        return $this->renderer->render($response, 'urls/index.php', [
             'title' => 'Сайты',
-            'urls' => UrlPresenter::forIndexList($urls),
+            'urls' => UrlPresenter::forIndexList($urls, $statusByUrlId),
         ]);
     }
 }

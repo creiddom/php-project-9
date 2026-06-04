@@ -11,14 +11,15 @@ final class UrlPresenter
 {
     /**
      * @param list<array<string, mixed>> $urls
+     * @param array<int, mixed>         $statusByUrlId
      *
      * @return list<array<string, mixed>>
      */
-    public static function forIndexList(array $urls): array
+    public static function forIndexList(array $urls, array $statusByUrlId): array
     {
         return array_map(
-            static function (array $url): array {
-                $statusCode = $url['last_status_code'] ?? null;
+            static function (array $url) use ($statusByUrlId): array {
+                $statusCode = $statusByUrlId[(int) $url['id']] ?? null;
 
                 return [
                     'id' => $url['id'],
@@ -55,7 +56,7 @@ final class UrlPresenter
         return array_map(
             static fn (array $check): array => [
                 'id' => $check['id'],
-                'status_code' => $check['status_code'],
+                'status_code' => $check['status_code'] !== null ? (string) $check['status_code'] : '',
                 'h1' => Text::forDisplay($check['h1'] !== null ? (string) $check['h1'] : null),
                 'title' => Text::forDisplay($check['title'] !== null ? (string) $check['title'] : null),
                 'description' => Text::forDisplay(

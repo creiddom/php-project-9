@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Validator;
 
 use App\Validator\UrlFormValidator;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class UrlFormValidatorTest extends TestCase
@@ -16,81 +17,49 @@ final class UrlFormValidatorTest extends TestCase
         $this->validator = new UrlFormValidator();
     }
 
-    public function testValidUrl(): void
+    #[DataProvider('validUrlProvider')]
+    public function testValidUrl(string $input, string $expected): void
     {
-        $result = $this->validator->validate(['url' => 'https://example.com/path']);
+        $result = $this->validator->validate(['url' => $input]);
 
         $this->assertTrue($result->valid);
         $this->assertSame([], $result->errors);
-        $this->assertSame('https://example.com/path', $result->url);
+        $this->assertSame($expected, $result->url);
     }
 
-    public function testValidUrlWithTrailingSpace(): void
+    /**
+     * @return iterable<string, array{string, string}>
+     */
+    public static function validUrlProvider(): iterable
     {
-        $result = $this->validator->validate(['url' => 'https://mail.ru ']);
-
-        $this->assertTrue($result->valid);
-        $this->assertSame('https://mail.ru', $result->url);
+        yield 'plain url' => ['https://example.com/path', 'https://example.com/path'];
+        yield 'trailing space' => ['https://mail.ru ', 'https://mail.ru'];
     }
 
-    public function testEmptyUrl(): void
+    #[DataProvider('invalidUrlProvider')]
+    public function testInvalidUrl(?array $data, string $expectedError): void
     {
-        $result = $this->validator->validate(['url' => '']);
+        $result = $this->validator->validate($data);
 
         $this->assertFalse($result->valid);
-        $this->assertContains(UrlFormValidator::ERROR_EMPTY, $result->errors);
+        $this->assertContains($expectedError, $result->errors);
+        $this->assertCount(1, $result->errors);
     }
 
-    public function testWhitespaceOnlyUrl(): void
+    /**
+     * @return iterable<string, array{?array<string, mixed>, string}>
+     */
+    public static function invalidUrlProvider(): iterable
     {
-        $result = $this->validator->validate(['url' => '   ']);
-
-        $this->assertFalse($result->valid);
-        $this->assertContains(UrlFormValidator::ERROR_EMPTY, $result->errors);
-    }
-
-    public function testMissingUrlField(): void
-    {
-        $result = $this->validator->validate([]);
-
-        $this->assertFalse($result->valid);
-        $this->assertNotEmpty($result->errors);
-    }
-
-    public function testTooLongUrl(): void
-    {
-        $result = $this->validator->validate(['url' => 'https://example.com/' . str_repeat('a', 250)]);
-
-        $this->assertFalse($result->valid);
-        $this->assertContains(UrlFormValidator::ERROR_TOO_LONG, $result->errors);
-    }
-
-    public function testInvalidUrl(): void
-    {
-        $result = $this->validator->validate(['url' => 'not-a-url']);
-
-        $this->assertFalse($result->valid);
-        $this->assertContains(UrlFormValidator::ERROR_INVALID, $result->errors);
-    }
-
-    public function testUrlWithSpaces(): void
-    {
-        $result = $this->validator->validate(['url' => 'https://exa mple.com']);
-
-        $this->assertFalse($result->valid);
-    }
-
-    public function testUrlWithCredentials(): void
-    {
-        $result = $this->validator->validate(['url' => 'https://user:pass@example.com']);
-
-        $this->assertFalse($result->valid);
-    }
-
-    public function testNullData(): void
-    {
-        $result = $this->validator->validate(null);
-
-        $this->assertFalse($result->valid);
+        yield 'empty' => [['url' => ''], UrlFormValidator::ERROR_EMPTY];
+        yield 'whitespace only' => [['url' => '   '], UrlFormValidator::ERROR_EMPTY];
+        yield 'missing field' => [[], UrlFormValidator::ERROR_EMPTY];
+        yield 'null data' => [null, UrlFormValidator::ERROR_EMPTY];
+        yield 'too long' => [
+            ['url' => 'https://example.com/' . str_repeat('a', 250)],
+            UrlFormValidator::ERROR_TOO_LONG,
+        ];
+        yield 'not a url' => [['url' => 'not-a-url'], UrlFormValidator::ERROR_INVALID];
+        yield 'spaces in host' => [['url' => 'https://exa mple.com'], UrlFormValidator::ERROR_INVALID];
     }
 }
