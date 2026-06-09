@@ -7,6 +7,7 @@ namespace Tests\Unit\Http\Action;
 use App\Http\Action\UrlsStoreAction;
 use App\Http\RedirectResponse;
 use App\Repository\UrlRepository;
+use App\Service\UrlStoreService;
 use App\Support\UrlNormalizer;
 use App\Validator\UrlFormValidator;
 use App\View\RoutePresenter;
@@ -71,12 +72,16 @@ final class UrlsStoreActionTest extends TestCase
                 static fn (string $name, array $data): string => '/urls/' . $data['id'],
             );
 
-        return new UrlsStoreAction(
-            RendererFactory::create(),
-            new Messages(),
+        $urlStoreService = new UrlStoreService(
             new UrlFormValidator(),
             new UrlNormalizer(),
             $repository,
+        );
+
+        return new UrlsStoreAction(
+            RendererFactory::create(),
+            new Messages(),
+            $urlStoreService,
             new RoutePresenter($parser),
             new RedirectResponse(new ResponseFactory(), new StreamFactory()),
         );

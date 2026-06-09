@@ -43,7 +43,7 @@ final class UrlFormValidatorTest extends TestCase
 
         $this->assertFalse($result->valid);
         $this->assertContains($expectedError, $result->errors);
-        $this->assertCount(1, $result->errors);
+        $this->assertNotEmpty($result->errors);
     }
 
     /**

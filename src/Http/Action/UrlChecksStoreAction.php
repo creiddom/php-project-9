@@ -30,15 +30,14 @@ final class UrlChecksStoreAction
      */
     public function __invoke(Request $request, Response $response, array $args): Response
     {
-        unset($response);
-
-        $url = $this->urlRepository->findById($args['id']);
+        $urlId = (int) $args['id'];
+        $url = $this->urlRepository->findById($urlId);
 
         if ($url === null) {
             throw new HttpNotFoundException($request);
         }
 
-        $redirectUrl = $this->route->for('urls.show', ['id' => $args['id']]);
+        $redirectUrl = $this->route->for('urls.show', ['id' => (string) $urlId]);
 
         $checkResult = $this->pageChecker->check((string) $url['name']);
 
@@ -52,7 +51,7 @@ final class UrlChecksStoreAction
         $seo = $checkResult->seo ?? ['h1' => null, 'title' => null, 'description' => null];
 
         $this->urlRepository->insertCheck(
-            (int) $args['id'],
+            $urlId,
             $checkResult->statusCode,
             $seo['h1'],
             $seo['title'],

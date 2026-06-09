@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Action;
 
 use App\Http\RedirectResponse;
-use App\Repository\UrlRepository;
-use App\Support\UrlNormalizer;
+use App\Service\UrlStoreService;
 use App\Validator\UrlFormValidator;
 use App\View\RoutePresenter;
-use Carbon\Carbon;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Slim\Flash\Messages;
@@ -20,9 +18,7 @@ final class UrlsStoreAction
     public function __construct(
         private readonly PhpRenderer $renderer,
         private readonly Messages $flash,
-        private readonly UrlFormValidator $urlFormValidator,
-        private readonly UrlNormalizer $urlNormalizer,
-        private readonly UrlRepository $urlRepository,
+        private readonly UrlStoreService $urlStoreService,
         private readonly RoutePresenter $route,
         private readonly RedirectResponse $redirectResponse,
     ) {
@@ -32,9 +28,10 @@ final class UrlsStoreAction
     {
         $parsedBody = $request->getParsedBody();
         $data = is_array($parsedBody) ? $parsedBody : null;
-        $validation = $this->urlFormValidator->validate($data);
+        $result = $this->urlStoreService->store($data);
 
-        if (!$validation->valid) {
+        if ($result->validation !== null) {
+            $validation = $result->validation;
             $error = $validation->errors[0] ?? UrlFormValidator::ERROR_INVALID;
             $this->flash->addMessage('danger', $error);
 
@@ -45,20 +42,10 @@ final class UrlsStoreAction
             ]);
         }
 
-        $normalizedUrl = $this->urlNormalizer->normalize($validation->url);
-        $existingUrl = $this->urlRepository->findIdByName($normalizedUrl);
+        $this->flash->addMessage('success', $result->flashMessage);
 
-        if ($existingUrl !== null) {
-            $urlId = (string) $existingUrl['id'];
-            $flashMessage = 'Страница уже существует';
-        } else {
-            $createdAt = Carbon::now();
-            $urlId = $this->urlRepository->insert($normalizedUrl, $createdAt->toDateTimeString());
-            $flashMessage = 'Страница успешно добавлена';
-        }
-
-        $this->flash->addMessage('success', $flashMessage);
-
-        return $this->redirectResponse->to($this->route->for('urls.show', ['id' => $urlId]));
+        return $this->redirectResponse->to(
+            $this->route->for('urls.show', ['id' => (string) $result->urlId]),
+        );
     }
 }

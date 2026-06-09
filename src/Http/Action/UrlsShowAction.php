@@ -24,13 +24,14 @@ final class UrlsShowAction
      */
     public function __invoke(Request $request, Response $response, array $args): Response
     {
-        $url = $this->urlRepository->findById($args['id']);
+        $urlId = (int) $args['id'];
+        $url = $this->urlRepository->findById($urlId);
 
         if ($url === null) {
             throw new HttpNotFoundException($request);
         }
 
-        $checks = $this->urlRepository->findChecksByUrlId($args['id']);
+        $checks = $this->urlRepository->findChecksByUrlId($urlId);
 
         return $this->renderer->render($response, 'urls/show.php', [
             'title' => 'Сайт',

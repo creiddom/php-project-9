@@ -58,7 +58,7 @@ final class UrlRepository
     /**
      * @return array<string, mixed>|null
      */
-    public function findById(int|string $id): ?array
+    public function findById(int $id): ?array
     {
         $stmt = $this->pdo->prepare('SELECT id, name, created_at FROM urls WHERE id = ?');
         $stmt->execute([$id]);
@@ -70,7 +70,7 @@ final class UrlRepository
     /**
      * @return list<array<string, mixed>>
      */
-    public function findChecksByUrlId(int|string $urlId): array
+    public function findChecksByUrlId(int $urlId): array
     {
         $stmt = $this->pdo->prepare(
             'SELECT id, url_id, status_code, h1, title, description, created_at
@@ -106,7 +106,7 @@ final class UrlRepository
     }
 
     public function insertCheck(
-        int|string $urlId,
+        int $urlId,
         ?int $statusCode,
         ?string $h1,
         ?string $title,

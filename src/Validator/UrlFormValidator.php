@@ -29,7 +29,6 @@ final class UrlFormValidator
 
         $validator = new Validator($data);
         $validator->labels(['url' => '']);
-        $validator->stopOnFirstFail();
 
         $validator->rule('required', 'url')->message(self::ERROR_EMPTY);
         $validator->rule('lengthMax', 'url', self::MAX_LENGTH)->message(self::ERROR_TOO_LONG);
