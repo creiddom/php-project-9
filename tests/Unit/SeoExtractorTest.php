@@ -41,4 +41,13 @@ final class SeoExtractorTest extends TestCase
 
         $this->assertNull($seo['h1']);
     }
+
+    public function testExtractWhenTagsAreMissing(): void
+    {
+        $seo = (new SeoExtractor())->extract('<html><head></head><body></body></html>');
+
+        $this->assertNull($seo['h1']);
+        $this->assertNull($seo['title']);
+        $this->assertNull($seo['description']);
+    }
 }

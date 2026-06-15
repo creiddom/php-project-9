@@ -6,7 +6,6 @@ use App\Database\PdoFactory;
 use App\Http\HttpErrorHandler;
 use App\View\RoutePresenter;
 use DI\ContainerBuilder;
-use PDO;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseFactoryInterface;
 use Slim\App;
